@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,17 +46,37 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  bool _showOnboarding = true;
+  bool _isCheckingOnboarding = true;
+
   @override
   void initState() {
     super.initState();
+    _checkOnboardingStatus();
     _setupAuthListener();
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+    setState(() {
+      _showOnboarding = !hasSeenOnboarding;
+      _isCheckingOnboarding = false;
+    });
+  }
+
+  Future<void> _completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenOnboarding', true);
+    setState(() {
+      _showOnboarding = false;
+    });
   }
 
   void _setupAuthListener() {
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final session = data.session;
       if (session != null) {
-        // Create profile only if it doesn't exist
         _createUserProfileIfNotExists(session.user.id);
       }
     });
@@ -83,6 +105,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading while checking onboarding status
+    if (_isCheckingOnboarding) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Show onboarding if user hasn't seen it
+    if (_showOnboarding) {
+      return OnboardingScreen(onGetStarted: _completeOnboarding);
+    }
+
+    // Otherwise show the normal auth flow
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {

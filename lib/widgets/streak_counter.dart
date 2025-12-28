@@ -65,6 +65,22 @@ class _StreakCounterState extends State<StreakCounter> {
     );
   }
 
+  String _getRandomQuote() {
+    final quotes = [
+      "Every journey begins with a single step. You've taken yours!",
+      "The secret of getting ahead is getting started.",
+      "Don't watch the clock; do what it does. Keep going.",
+      "You're stronger than you think. One day at a time.",
+      "Progress, not perfection. Every smoke-free moment counts.",
+      "Your future self will thank you for starting today.",
+      "It's not about being the best. It's about being better than yesterday.",
+      "Small steps every day lead to big changes over time.",
+      "You have the power to change your story. Start now.",
+      "Every minute smoke-free is a victory. Celebrate them all!",
+    ];
+    return quotes[DateTime.now().millisecondsSinceEpoch % quotes.length];
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -91,6 +107,33 @@ class _StreakCounterState extends State<StreakCounter> {
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
+            if (widget.streakStart == null)
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        color: Theme.of(context).primaryColor,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _getRandomQuote(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (widget.streakStart != null) const SizedBox(height: 20),
             Text(
               _formatDuration(widget.currentDuration),
               style: TextStyle(

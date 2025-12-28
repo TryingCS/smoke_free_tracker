@@ -9,8 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.1.1
+  supabase_flutter: ^2.1.1 #"backend" ta3na kaml rakeb 3lih
   intl: ^0.19.0
+  shared_preferences: ^2.2.2  #for onboarding shenanigans
+
 
 dev_dependencies:
   flutter_test:
