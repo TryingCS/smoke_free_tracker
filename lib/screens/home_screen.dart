@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<Map<String, dynamic>> _notes = [];
   String? _userNickname;
   String? _userId;
+  int _personalBest = 0; // ADDED: Personal best variable
 
   @override
   void initState() {
@@ -52,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen>
       if (profile != null) {
         setState(() {
           _userNickname = profile['nickname'];
+          _personalBest =
+              profile['personal_best_days'] ?? 0; // ADDED: Load personal best
         });
       }
     }
@@ -150,11 +153,27 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _registerRelapse(String? note) async {
     if (_userId == null) return;
 
+    // Save the current streak duration before resetting
+    final endedStreakDays = _currentDuration.inDays;
+
     await SupabaseService.registerRelapse(_userId!, note: note);
+
+    // Check if this streak was a personal best
+    if (endedStreakDays > _personalBest) {
+      // Update in database
+      await SupabaseService.updatePersonalBest(_userId!, endedStreakDays);
+
+      // Update local state
+      setState(() {
+        _personalBest = endedStreakDays;
+      });
+    }
+
     setState(() {
       _streakStart = null;
       _currentDuration = Duration.zero;
     });
+
     _loadRelapses();
     _loadLeaderboard();
   }
@@ -215,6 +234,7 @@ class _HomeScreenState extends State<HomeScreen>
           ProfileScreen(
             userId: _userId ?? '',
             currentNickname: _userNickname ?? 'User',
+            personalBest: _personalBest, // UPDATED: Added personalBest
             onNicknameUpdated: _updateNickname,
           ),
         ],

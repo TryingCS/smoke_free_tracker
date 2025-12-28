@@ -155,4 +155,51 @@ class SupabaseService {
       return [];
     }
   }
+  //me being silly
+
+// Get personal best streak
+  static Future<int> getPersonalBest(String userId) async {
+    try {
+      final response = await supabase
+          .from('profiles')
+          .select('personal_best_days')
+          .eq('user_id', userId)
+          .single();
+      return response['personal_best_days'] ?? 0;
+    } catch (e) {
+      print('Error getting personal best: $e');
+      return 0;
+    }
+  }
+
+// Update personal best streak
+  static Future<void> updatePersonalBest(String userId, int days) async {
+    try {
+      // Only update if new streak is longer than current
+      await supabase
+          .from('profiles')
+          .update({'personal_best_days': days})
+          .eq('user_id', userId)
+          .gt('personal_best_days',
+              days); // This ensures we only update if new is greater
+    } catch (e) {
+      print('Error updating personal best: $e');
+    }
+  }
+
+// Check and update personal best when streak ends
+  static Future<void> checkAndUpdatePersonalBest(
+      String userId, Duration streakDuration) async {
+    try {
+      final currentBest = await getPersonalBest(userId);
+      final currentStreakDays = streakDuration.inDays;
+
+      if (currentStreakDays > currentBest) {
+        await supabase.from('profiles').update(
+            {'personal_best_days': currentStreakDays}).eq('user_id', userId);
+      }
+    } catch (e) {
+      print('Error checking personal best: $e');
+    }
+  }
 }
