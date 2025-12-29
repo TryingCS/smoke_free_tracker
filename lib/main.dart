@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'services/supabase_service.dart'; // Add this import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,22 +85,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _createUserProfileIfNotExists(String userId) async {
     try {
-      final existingProfile = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('user_id', userId)
-          .limit(1);
-
-      // Only create default profile if one doesn't exist
-      if (existingProfile.isEmpty) {
-        await Supabase.instance.client.from('profiles').upsert({
-          'user_id': userId,
-          'nickname': 'User${userId.substring(0, 6)}',
-        }, onConflict: 'user_id');
-      }
-      // If profile already exists, do NOTHING - don't overwrite!
+      // Use the service method instead of duplicating logic
+      await SupabaseService.ensureUserProfileAndStreak(userId);
     } catch (e) {
-      print('Profile creation error: $e');
+      print('Profile/streak creation error: $e');
     }
   }
 

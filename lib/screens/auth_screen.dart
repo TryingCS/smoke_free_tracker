@@ -23,9 +23,9 @@ class _AuthScreenState extends State<AuthScreen> {
         password: _passwordController.text.trim(),
       );
     } on AuthException catch (error) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -40,15 +40,32 @@ class _AuthScreenState extends State<AuthScreen> {
       );
 
       if (response.user != null) {
-        // Use INSERT instead of UPSERT for new profiles
+        // Create profile with nickname IMMEDIATELY
         final nickname = _nicknameController.text.trim().isNotEmpty
             ? _nicknameController.text.trim()
             : 'User${response.user!.id.substring(0, 6)}';
 
+        // FIX: Include ALL required fields
         await Supabase.instance.client.from('profiles').insert({
           'user_id': response.user!.id,
           'nickname': nickname,
+          'personal_best_days': 0, // This was missing!
         });
+
+        // Create streak record IMMEDIATELY
+        await Supabase.instance.client.from('streaks').insert({
+          'user_id': response.user!.id,
+          'current_streak_start': null,
+          'last_relapse': null,
+        });
+
+        // Show success
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created! Check your email to confirm.'),
+            duration: Duration(seconds: 4),
+          ),
+        );
       }
     } on AuthException catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(

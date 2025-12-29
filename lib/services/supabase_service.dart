@@ -3,15 +3,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   static final supabase = Supabase.instance.client;
 
-  // User Profile
+  // User Profile - FIXED VERSION
   static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
       final response = await supabase
           .from('profiles')
           .select()
           .eq('user_id', userId)
-          .limit(1);
-      return response.isNotEmpty ? response[0] : null;
+          .maybeSingle()
+          .onError((_, __) => null);
+
+      return response;
     } catch (e) {
       print('Error getting user profile: $e');
       return null;
@@ -20,10 +22,9 @@ class SupabaseService {
 
   static Future<void> updateNickname(String userId, String nickname) async {
     try {
-      // Since we know the profile exists (user is logged in), we can use update
-      await supabase.from('profiles').update({
-        'nickname': nickname,
-      }).eq('user_id', userId);
+      await supabase
+          .from('profiles')
+          .update({'nickname': nickname}).eq('user_id', userId);
     } catch (e) {
       print('Error updating nickname: $e');
       rethrow;
@@ -37,8 +38,10 @@ class SupabaseService {
           .from('streaks')
           .select()
           .eq('user_id', userId)
-          .limit(1);
-      return response.isNotEmpty ? response[0] : null;
+          .maybeSingle()
+          .onError((_, __) => null);
+
+      return response;
     } catch (e) {
       print('Error getting streak: $e');
       return null;
@@ -155,51 +158,63 @@ class SupabaseService {
       return [];
     }
   }
-  //me being silly
 
-// Get personal best streak
+  // Personal Best - FIXED VERSION
   static Future<int> getPersonalBest(String userId) async {
     try {
       final response = await supabase
           .from('profiles')
           .select('personal_best_days')
           .eq('user_id', userId)
-          .single();
-      return response['personal_best_days'] ?? 0;
+          .maybeSingle()
+          .onError((_, __) => null);
+
+      return response?['personal_best_days'] ?? 0;
     } catch (e) {
       print('Error getting personal best: $e');
       return 0;
     }
   }
 
-// Update personal best streak
+  // Update personal best - FIXED VERSION (removed .gt condition)
   static Future<void> updatePersonalBest(String userId, int days) async {
     try {
-      // Only update if new streak is longer than current
       await supabase
           .from('profiles')
-          .update({'personal_best_days': days})
-          .eq('user_id', userId)
-          .gt('personal_best_days',
-              days); // This ensures we only update if new is greater
+          .update({'personal_best_days': days}).eq('user_id', userId);
     } catch (e) {
       print('Error updating personal best: $e');
     }
   }
 
-// Check and update personal best when streak ends
-  static Future<void> checkAndUpdatePersonalBest(
-      String userId, Duration streakDuration) async {
+  // CRITICAL: Create profile and streak if missing
+  static Future<void> ensureUserProfileAndStreak(String userId) async {
     try {
-      final currentBest = await getPersonalBest(userId);
-      final currentStreakDays = streakDuration.inDays;
+      // Check if profile exists
+      final profile = await getUserProfile(userId);
+      if (profile == null) {
+        // Create profile
+        await supabase.from('profiles').insert({
+          'user_id': userId,
+          'nickname': 'User${userId.substring(0, 6)}',
+          'personal_best_days': 0,
+        });
+        print('Created missing profile for user: $userId');
+      }
 
-      if (currentStreakDays > currentBest) {
-        await supabase.from('profiles').update(
-            {'personal_best_days': currentStreakDays}).eq('user_id', userId);
+      // Check if streak exists
+      final streak = await getStreak(userId);
+      if (streak == null) {
+        // Create streak record
+        await supabase.from('streaks').insert({
+          'user_id': userId,
+          'current_streak_start': null,
+          'last_relapse': null,
+        });
+        print('Created missing streak for user: $userId');
       }
     } catch (e) {
-      print('Error checking personal best: $e');
+      print('Error ensuring user profile/streak: $e');
     }
   }
 }

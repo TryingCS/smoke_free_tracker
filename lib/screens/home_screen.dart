@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<Map<String, dynamic>> _notes = [];
   String? _userNickname;
   String? _userId;
-  int _personalBest = 0; // ADDED: Personal best variable
+  int _personalBest = 0;
 
   @override
   void initState() {
@@ -49,12 +49,15 @@ class _HomeScreenState extends State<HomeScreen>
     final session = SupabaseService.supabase.auth.currentSession;
     if (session != null) {
       _userId = session.user.id;
+
+      // CRITICAL: Ensure profile and streak exist
+      await SupabaseService.ensureUserProfileAndStreak(_userId!);
+
       final profile = await SupabaseService.getUserProfile(_userId!);
       if (profile != null) {
         setState(() {
           _userNickname = profile['nickname'];
-          _personalBest =
-              profile['personal_best_days'] ?? 0; // ADDED: Load personal best
+          _personalBest = profile['personal_best_days'] ?? 0;
         });
       }
     }
@@ -234,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen>
           ProfileScreen(
             userId: _userId ?? '',
             currentNickname: _userNickname ?? 'User',
-            personalBest: _personalBest, // UPDATED: Added personalBest
+            personalBest: _personalBest,
             onNicknameUpdated: _updateNickname,
           ),
         ],
