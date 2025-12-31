@@ -9,15 +9,32 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.1.1 #"backend" ta3na kaml rakeb 3lih
+  supabase_flutter: ^2.1.1
   intl: ^0.19.0
-  shared_preferences: ^2.2.2  #for onboarding shenanigans
-
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
+
+# Updated Logic to include Web
+flutter_launcher_icons:
+  android: "launcher_icon"
+  # Web must be defined as a map with sub-parameters
+  web:
+    generate: true
+    image_path: "assets/icon/icon_foreground.png"
+    background_color: "#263238"
+    theme_color: "#263238"
+  
+  # Android specific parameters
+  image_path_android: "assets/icon/icon_foreground.png"
+  adaptive_icon_background: "#263238"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/icon_foreground.png
